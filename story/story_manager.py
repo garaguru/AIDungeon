@@ -8,13 +8,16 @@ from story.utils import *
 
 
 class Story:
-    def __init__(
-        self, story_start, context="", seed=None, game_state=None, upload_story=False
-    ):
+    def __init__(self, story_start, context="", seed=None, game_state=None, upload_story=False,
+                 enable_rating=False, default_memory=20):
         self.story_start = story_start
         self.context = context
         self.rating = -1
         self.upload_story = upload_story
+        self.enable_rating = enable_rating
+        self.memory = default_memory
+
+
 
         # list of actions. First action is the prompt length should always equal that of story blocks
         self.actions = []
@@ -31,7 +34,6 @@ class Story:
         if game_state is None:
             game_state = dict()
         self.game_state = game_state
-        self.memory = 20
 
     def __del__(self):
         if self.upload_story:
@@ -66,17 +68,15 @@ class Story:
         self.results.append(story_block)
 
     def latest_result(self):
-
         mem_ind = self.memory
         if len(self.results) < 2:
             latest_result = self.story_start
         else:
             latest_result = self.context
-        while mem_ind > 0:
 
+        while mem_ind > 0:
             if len(self.results) >= mem_ind:
                 latest_result += self.actions[-mem_ind] + self.results[-mem_ind]
-
             mem_ind -= 1
 
         return latest_result
@@ -150,6 +150,8 @@ class Story:
                 return "Error save not found locally or in the cloud."
 
     def get_rating(self):
+        if not self.enable_rating:
+            return
         while True:
             try:
                 rating = input("Please rate the story quality from 1-10: ")
@@ -167,7 +169,8 @@ class StoryManager:
         self.story = None
 
     def start_new_story(
-        self, story_prompt, context="", game_state=None, upload_story=False
+        self, story_prompt, context="", game_state=None, upload_story=False,
+        enable_rating=True, default_memory=20
     ):
         block = self.generator.generate(context + story_prompt)
         block = cut_trailing_sentence(block)
@@ -176,6 +179,8 @@ class StoryManager:
             context=context,
             game_state=game_state,
             upload_story=upload_story,
+            enable_rating=enable_rating,
+            default_memory=default_memory
         )
         return str(self.story)
 

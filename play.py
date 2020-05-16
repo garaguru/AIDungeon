@@ -3,6 +3,7 @@ import os
 import random
 import sys
 import time
+import argparse
 
 from generator.gpt2.gpt2_generator import *
 from story import grammars
@@ -11,6 +12,29 @@ from story.utils import *
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+parser = argparse.ArgumentParser("Play AIDungeon 2")
+parser.add_argument(
+    "--disable_censor",
+    action="store_false",
+    help="Do not censor the story."
+)
+parser.add_argument(
+    "--generate_num",
+    type=int,
+    default=60,
+    help="Length of the generated result"
+)
+parser.add_argument(
+    "--enable_rating",
+    action="store_true",
+    help="Enable story rating function."
+)
+parser.add_argument(
+    "--default_memory",
+    type=int,
+    default=20,
+    help="Number of latest context rounds the generator based on."
+)
 
 def splash():
     print("0) New Game\n1) Load Game\n")
@@ -141,12 +165,14 @@ def instructions():
     text += '\n  "/save"     Makes a new save of your game and gives you the save ID'
     text += '\n  "/load"     Asks for a save ID and loads the game if the ID is valid'
     text += '\n  "/print"    Prints a transcript of your adventure (without extra newline formatting)'
+    text += '\n  "/remc"      Print and Modify the context'
     text += '\n  "/help"     Prints these instructions again'
+    text += '\n  "/memset [integer]" Set the number of rounds story generator remembered.'
     text += '\n  "/censor off/on" to turn censoring off or on.'
     return text
 
 
-def play_aidungeon_2():
+def play_aidungeon_2(args):
 
     console_print(
         "AI Dungeon 2 will save and use your actions and game to continually improve AI Dungeon."
@@ -157,7 +183,10 @@ def play_aidungeon_2():
     upload_story = True
 
     print("\nInitializing AI Dungeon! (This might take a few minutes)\n")
-    generator = GPT2Generator()
+    generator = GPT2Generator(
+        generate_num=args.generate_num,
+        censor=args.disable_censor
+    )
     story_manager = UnconstrainedStoryManager(generator)
     print("\n")
 
@@ -195,7 +224,11 @@ def play_aidungeon_2():
                 print("\nGenerating story...")
 
                 result = story_manager.start_new_story(
-                    prompt, context=context, upload_story=upload_story
+                    prompt,
+                    context=context,
+                    upload_story=upload_story, 
+                    enable_rating=args.enable_rating,
+                    default_memory=args.default_memory
                 )
                 print("\n")
                 console_print(result)
@@ -237,6 +270,22 @@ def play_aidungeon_2():
 
                 elif command == "help":
                     console_print(instructions())
+
+                elif command == "remc":
+                    print(story_manager.story.context)
+                    console_print("\nPlease input all the context you want to remember.")
+                    story_manager.story.context = input("> ").strip()
+                    console_print("Context is remembered")
+
+                elif command == "memset":
+                    if len(args) == 0:
+                        console_print("Command \"memset\" need a integer argument.(e.g. memset 20)")
+                    elif args[0].isdigit:
+                        console_print("Former memory size is {}".format(story_manager.story.memory))
+                        story_manager.story.memory=int(args[0])
+                        console_print("New memory size is {}".format(story_manager.story.memory))
+                    else:
+                        console_print("Invalid argument: {}".format(args[0]))
 
                 elif command == "censor":
                     if len(args) == 0:
@@ -364,4 +413,5 @@ def play_aidungeon_2():
 
 
 if __name__ == "__main__":
-    play_aidungeon_2()
+    args = parser.parse_args()
+    play_aidungeon_2(args)
