@@ -165,7 +165,7 @@ def instructions():
     text += '\n  "/save"     Makes a new save of your game and gives you the save ID'
     text += '\n  "/load"     Asks for a save ID and loads the game if the ID is valid'
     text += '\n  "/print"    Prints a transcript of your adventure (without extra newline formatting)'
-    text += '\n  "/remc"      Print and Modify the context'
+    text += '\n  "/remc"     Print and Modify the context'
     text += '\n  "/help"     Prints these instructions again'
     text += '\n  "/memset [integer]" Set the number of rounds story generator remembered.'
     text += '\n  "/censor off/on" to turn censoring off or on.'
@@ -352,6 +352,10 @@ def play_aidungeon_2(args):
                     console_print("Unknown command: {}".format(command))
 
             else:
+                #TODO: add story tell mode.
+                # If action begins with upper case letter, do not modify anything.
+                # If action begins with lower case letter, add "You " in front of it.
+                # If action begins with ", add "You say " in front of it.
                 if action == "":
                     action = ""
                     result = story_manager.act(action)
